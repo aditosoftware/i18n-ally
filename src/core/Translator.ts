@@ -7,6 +7,7 @@ import { Commands } from '~/commands'
 import i18n from '~/i18n'
 import { Log } from '~/utils'
 import { Translator as TranslateEngine, TranslateResult } from '~/translators'
+import { decodeParams, encodeParams } from '~/utils/translationEncoder'
 
 interface TranslatorChangeEvent {
   keypath: string
@@ -309,9 +310,12 @@ export class Translator {
     if (!text)
       return ''
 
+    const encText = encodeParams(text)
+    Log.info(`Requested: "${encText.text}"`, 1)
+
     for (const engine of engines) {
       try {
-        trans_result = await this._translator.translate({ engine, text, from, to })
+        trans_result = await this._translator.translate({ engine, text: encText.text, from, to })
         if (trans_result.error)
           throw trans_result.error
 
@@ -327,6 +331,6 @@ export class Translator {
     if (!result)
       throw errors[0]
 
-    return result
+    return decodeParams(result, encText.params)
   }
 }

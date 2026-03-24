@@ -26,11 +26,15 @@ deepl.interceptors.request.use((req) => {
     ? 'https://api-free.deepl.com/v2'
     : 'https://api.deepl.com/v2'
 
-req.headers.Authorization = `DeepL-Auth-Key ${Config.deeplApiKey}`;
+  req.headers.Authorization = `DeepL-Auth-Key ${Config.deeplApiKey}`;
 
   if (req.method === 'POST' || req.method === 'post') {
     req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
     req.data = qs.stringify(req.data)
+    req.params = {
+      'tag_handling': 'xml',
+      'tag_handling_version': 'v2'
+    }
   }
 
   log(true, req)
@@ -110,7 +114,6 @@ class DeepL extends TranslateEngine {
 
       r.result = result
     }
-    catch (err) {}
 
     if (!r.detailed && !r.result) r.error = new Error('No result')
 
