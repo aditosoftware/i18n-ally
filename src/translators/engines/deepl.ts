@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
+import axiosRetry from 'axios-retry/dist/cjs'
 import qs from 'qs'
 
 import TranslateEngine, { TranslateOptions, TranslateResult } from './base'
@@ -26,14 +27,14 @@ deepl.interceptors.request.use((req) => {
     ? 'https://api-free.deepl.com/v2'
     : 'https://api.deepl.com/v2'
 
-  req.headers.Authorization = `DeepL-Auth-Key ${Config.deeplApiKey}`;
+  req.headers.Authorization = `DeepL-Auth-Key ${Config.deeplApiKey}`
 
   if (req.method === 'POST' || req.method === 'post') {
     req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
     req.data = qs.stringify(req.data)
     req.params = {
-      'tag_handling': 'xml',
-      'tag_handling_version': 'v2'
+      tag_handling: 'xml',
+      tag_handling_version: 'v2',
     }
   }
 
@@ -46,6 +47,13 @@ deepl.interceptors.response.use((res) => {
   log(true, res)
 
   return res
+})
+
+axiosRetry(deepl, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  onRetry: (count, error: AxiosError) => { Log.info(`DeepL request failed, retrying (${count})... Error: ${error.message}`) },
+  retryCondition: error => axiosRetry.isNetworkOrIdempotentRequestError(error),
 })
 
 function log(inspector: boolean, ...args: any[]): void {
@@ -114,6 +122,7 @@ class DeepL extends TranslateEngine {
 
       r.result = result
     }
+    catch (err) {}
 
     if (!r.detailed && !r.result) r.error = new Error('No result')
 
